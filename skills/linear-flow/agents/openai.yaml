@@ -1,0 +1,4 @@
+interface:
+  display_name: "Linear Flow"
+  short_description: "Linear workflow for discovery, triage, planning, and delivery"
+  default_prompt: "Use $linear-flow to route this Linear work through the right path."
