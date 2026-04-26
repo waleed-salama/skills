@@ -4,7 +4,7 @@ This repository contains reusable Codex skills maintained by Waleed Salama.
 
 ## Repository Intent
 
-- This repo is intended to become the public GitHub repository `waleed-salama/skills`.
+- This repo is published as the public GitHub repository `waleed-salama/skills`.
 - It packages reusable skills in the Vercel/OpenAI-compatible skill layout.
 - The current primary skills are:
   - `linear-flow`: a structured Linear workflow from idea intake through triage, planning, implementation, review, closeout, and cancellation.
@@ -81,14 +81,25 @@ python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" "$
 
 Run validation after every meaningful skill edit.
 
-## Public Install Goal
+## Public Install
 
-The intended public install commands are:
+Install both skills globally for Codex with:
 
 ```bash
-npx skills add waleed-salama/skills --skill linear-flow --skill commit-flow
-npx skills add waleed-salama/skills --skill linear-flow
-npx skills add waleed-salama/skills --skill commit-flow
+npx skills add waleed-salama/skills -g -a codex --skill linear-flow commit-flow
+```
+
+Install one skill globally for Codex with:
+
+```bash
+npx skills add waleed-salama/skills -g -a codex --skill linear-flow
+npx skills add waleed-salama/skills -g -a codex --skill commit-flow
+```
+
+List available skills without installing:
+
+```bash
+npx skills add waleed-salama/skills --list
 ```
 
 For local development, prefer symlinks over copying so edits in this repo are immediately available to Codex after a new chat starts or the skill is re-read.
@@ -233,8 +244,10 @@ When editing `commit-flow`, preserve its role as a reusable delivery skill indep
 
 When `linear-flow` references `commit-flow`, prefer portable wording such as "use the `commit-flow` skill" instead of hardcoded local filesystem links.
 
-## Current Known Follow-up
+## Current Handoff Status
 
-- Keep `linear-flow` and `commit-flow` free of maintainer-specific hardcoded local paths before publishing.
-- Consider whether public README install syntax should use `npx skills add waleed-salama/skills --skill ...` or the exact current CLI syntax after testing against the installed `skills` CLI.
-- Once ready, commit this repo and create/push the GitHub repository `waleed-salama/skills`.
+- GitHub repository exists at `https://github.com/waleed-salama/skills`.
+- The `skills` CLI can discover this package and currently lists `commit-flow` and `linear-flow`.
+- The skill files have been scanned for maintainer-specific hardcoded local paths.
+- Both skills validate with the `skill-creator` quick validator.
+- Before future publishing updates, validate both skills, scan for hardcoded maintainer paths, commit the changes, and push `main`.

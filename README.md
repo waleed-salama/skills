@@ -9,16 +9,22 @@ Reusable Codex skills by Waleed Salama.
 
 ## Install
 
-Install both skills with:
+Install both skills globally for Codex with:
 
 ```bash
-npx skills add waleed-salama/skills --skill linear-flow --skill commit-flow
+npx skills add waleed-salama/skills -g -a codex --skill linear-flow commit-flow
 ```
 
-Install one skill with:
+Install one skill globally for Codex with:
 
 ```bash
-npx skills add waleed-salama/skills --skill linear-flow
+npx skills add waleed-salama/skills -g -a codex --skill linear-flow
+```
+
+List available skills without installing:
+
+```bash
+npx skills add waleed-salama/skills --list
 ```
 
 ## Local Development
@@ -29,4 +35,3 @@ For local development, symlink the skill folders into Codex's global skills dire
 ln -s "/path/to/skills/skills/linear-flow" "$HOME/.codex/skills/linear-flow"
 ln -s "/path/to/skills/skills/commit-flow" "$HOME/.codex/skills/commit-flow"
 ```
-
