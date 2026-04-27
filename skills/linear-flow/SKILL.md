@@ -1,6 +1,6 @@
 ---
 name: linear-flow
-description: Route Linear work through a structured lifecycle from idea discovery to implementation. Use when Codex needs to add autonomous ideas to Linear, validate assertion issues from Suggested, create a new issue directly in Triaged from chat context, create a new issue directly into the planning workflow from chat context, triage Draft issues, deeply plan Todo issues without making code changes, or pull the next Ready-labeled Todo issue into repository implementation with documentation, worktrees, testing, and commit-flow.
+description: Route Linear work through a structured lifecycle from idea discovery to implementation. Use when Codex needs to add autonomous ideas to Linear, validate assertion issues from Suggested, create a new issue directly in Triaged from chat context, create a new issue directly into the planning workflow from chat context, triage Draft issues, deeply plan Todo issues without making code changes, or pull a Ready-labeled Todo issue into repository implementation with documentation, worktrees, testing, and commit-flow.
 ---
 
 # Linear Flow
@@ -97,17 +97,27 @@ Use this skill to manage Linear issues through a consistent backlog and delivery
 - When `planning/linear.md` exists and is sufficient, do not call basic Linear discovery tools such as authenticated-user, team-list, project-list, or status-list just to rediscover that cached information.
 - Only make those basic Linear discovery calls when `planning/linear.md` is missing, stale, incomplete, or clearly inconsistent with the current task.
 - If `planning/linear.md` is missing or incomplete and the current repository uses ongoing Linear coordination, fill it in as soon as the needed identifiers are confirmed.
-- Use the Linear plugin/skill for all issue reads and updates. Read first, then write.
+- Use the Linear plugin/skill for all normal issue reads and updates. Read first, then write.
+- Direct Linear API usage is allowed only for ordered queue-selection GraphQL queries and setup smoke tests described in [references/linear-api-setup.md](references/linear-api-setup.md). After the ordered query returns issue identifiers, switch back to the Linear MCP/app for reading issue descriptions, labels, comments, status updates, and description writes.
+- Use only Linear MCP/app tools that actually exist in the current environment. Typical tool names are `get_issue`, `update_issue`, `list_issues`, `list_issue_statuses`, `list_issue_labels`, `create_issue`, `list_comments`, and `create_comment`.
+- Do not invent generic MCP tool names such as `research`. If the available Linear tool names are unclear, inspect the Linear plugin/skill/tool list first; if Linear MCP tools are unavailable or the needed tool is missing, stop and ask the user to connect or fix the Linear app instead of substituting direct API writes.
 - When GitHub/Linear native integration is available, prefer native issue-to-PR linking over manual PR URL attachments.
 - For implementation PRs, use the PR description as the authoritative place for native Linear linking.
 - Use only `Part of {ISSUE-ID}` for non-closing links and `Resolves {ISSUE-ID}` for closing links.
 - Do not treat manually pasting a PR URL into a Linear issue as the primary linking mechanism when native GitHub/Linear linking is available.
-- Use Composio only for raw GraphQL queue-selection queries when the agent needs the actual manual order of issues in a status queue.
+- Use the direct Linear GraphQL API only for queue-selection queries when the agent needs the actual manual order of issues in a status queue.
 - When selecting issues from an ordered queue, do not rely on the standard Linear MCP issue listing order.
 - If `planning/linear.md` contains the project id, use that cached id for queue-selection queries instead of rediscovering it.
-- In a fresh thread, the expected minimal Composio flow for queue selection is:
-  - use `COMPOSIO_SEARCH_TOOLS` to discover the Linear GraphQL executor and establish the Composio session
-  - use `COMPOSIO_MULTI_EXECUTE_TOOL` to run the raw GraphQL query
+- For direct Linear API setup, troubleshooting, or first-time user guidance, read [references/linear-api-setup.md](references/linear-api-setup.md).
+- For queue selection, retrieve the Linear API key from `LINEAR_API_KEY` or a local OS secret store inside the same shell/process that performs the API call. Never ask the user to paste the key into chat.
+- Never print, echo, log, commit, write to `planning/linear.md`, or show the Linear API key in chat.
+- In a fresh thread with complete `planning/linear.md` identifiers, perform queue selection in one direct API call instead of doing a separate visible key-fetch step. Use an OS-appropriate one-shot command pattern such as:
+
+```bash
+sh -c 'k="${LINEAR_API_KEY:-$(security find-generic-password -a "$USER" -s codex-linear-api-key -w 2>/dev/null)}"; test -n "$k" || { echo "ERROR: Linear API key is not configured. See linear-flow references/linear-api-setup.md." >&2; exit 1; }; curl -sS https://api.linear.app/graphql -H "Authorization: $k" -H "Content-Type: application/json" --data-binary "$1"; unset k' sh '{"query":"query($projectId: ID!, $stateName: String!, $first: Int!) { issues(filter: { project: { id: { eq: $projectId } } state: { name: { eq: $stateName } } }, first: $first, sort: [{ manual: { order: Ascending } }]) { nodes { id identifier title sortOrder } } }","variables":{"projectId":"<project-id>","stateName":"Todo","first":1}}'
+```
+
+- The command above is the macOS Keychain pattern. On Linux, replace the key lookup with `secret-tool lookup service codex-linear-api-key account "$USER"` or another configured local secret command. On Windows PowerShell, use the SecretManagement pattern from [references/linear-api-setup.md](references/linear-api-setup.md).
 - The canonical queue-selection query shape is:
 
 ```graphql
@@ -143,7 +153,7 @@ query($projectId: ID!, $stateName: String!, $first: Int!) {
 - When this manual sort query is used, treat the returned order as the true queue order without relying on standard Linear MCP listing order.
 - If the manual-order queue-selection query cannot be completed reliably for any reason, stop immediately.
 - Do not fall back to native Linear issue listing order, recently updated issues, recently created issues, or any other inferred ordering for queue-based paths.
-- In that failure case, send one visible `final` message that explains the ordered queue could not be fetched authoritatively and asks the user to fix Composio or the queue-selection setup before continuing.
+- In that failure case, send one visible `final` message that explains the ordered queue could not be fetched authoritatively and asks the user to fix the Linear API key or queue-selection setup before continuing.
 - Do not deviate from the path instructions in this skill by inventing side workflows, extra temporary repositories, copied workspaces, ad hoc clones, or hidden delivery steps outside the tracked workspace.
 - If a path encounters a problem that the skill does not explicitly authorize a way to resolve, stop immediately and ask the user for further instructions instead of improvising a new workflow.
 - If moving an issue to `Canceled` or `Duplicate`, read [references/cancellation-protocol.md](references/cancellation-protocol.md) first.
@@ -158,7 +168,7 @@ Choose exactly one path:
 - `Direct Planning Issue Path`: Use when the user already discussed an issue in chat and wants Codex to create it directly in the planning workflow without first taking it from the `Todo` queue. This path creates a new `Todo` issue with the `Claimed` label for issues that are already beyond triage quality and ready to enter planning immediately from chat context. It never makes code changes. Then read [references/direct-planning-issue-path.md](references/direct-planning-issue-path.md).
 - `Triage Path`: Use when the task is a backlog-refinement session for fuzzy accepted ideas. This path fetches the first 7 `Draft` issues, shapes them into clearer problem/value/scope/solution writeups, gets user approval, and moves accepted issues to `Triaged`. It never makes code changes. Then read [references/triage-path.md](references/triage-path.md).
 - `Planning Path`: Use when the task is feature planning for the top unclaimed issue in `Todo`. This path claims that issue by adding the `Claimed` label, sizes the issue into `Fast`, `Standard`, or `Deep` planning depth, studies the codebase and repository conventions, works with the user only on the decisions that materially matter, rewrites the Linear description into a full implementation-ready spec, and may replace `Claimed` with `Ready` when planning is approved. It never makes code changes. Then read [references/planning-path.md](references/planning-path.md).
-- `Implementation Path`: Use when the task is to start building the next `Ready`-labeled issue from `Todo`. This path gets user approval, moves the issue to `In Progress`, removes the `Ready` label, branches into code-execution or admin-execution behavior based on the issue kind and the real work required, follows repository planning and documentation rules where applicable, supports user testing, and completes delivery through commit-flow when code work exists. Then read [references/implementation-path.md](references/implementation-path.md).
+- `Implementation Path`: Use when the task is to start building a `Ready`-labeled issue from `Todo`. If this chat just finished planning an issue and the user asks to implement, continue with that same issue instead of selecting the top `Ready` issue from the queue. Otherwise, select the next `Ready` issue by manual queue order. This path gets user approval, moves the issue to `In Progress`, removes the `Ready` label, branches into code-execution or admin-execution behavior based on the issue kind and the real work required, follows repository planning and documentation rules where applicable, supports user testing, and completes delivery through commit-flow when code work exists. Then read [references/implementation-path.md](references/implementation-path.md).
 
 ## Default Path
 

@@ -18,13 +18,13 @@ Use this path to convert fuzzy backlog ideas into clearer `Triaged` issues.
 
 1. Fetch the first 7 issues from the `Draft` queue using the canonical queue-selection rule:
    - read `planning/linear.md` first and use its cached project id when available
-   - use standard Linear MCP for normal issue reads and updates
-   - use Composio raw GraphQL to query `Draft` issues with `first: 7`, `identifier`, `title`, and `sortOrder`
+   - use actual Linear MCP/app tools such as `get_issue` and `update_issue` for normal issue reads and updates; do not invent tool names
+   - use the direct Linear GraphQL API to query `Draft` issues with `first: 7`, `identifier`, `title`, and `sortOrder`
    - include `sort: [{ manual: { order: Ascending } }]` in the GraphQL query
    - treat the returned order as the real manual queue order
    - if this ordered query cannot be completed authoritatively, stop immediately and tell the user in `final`; do not continue triage with any fallback ordering
    - if an `Assertion`-labeled issue is encountered in `Draft`, stop immediately and tell the user in `final` that assertion issues belong in `Suggested` and must be handled through the `Assertion Path`
-2. Read each issue and understand the intent.
+2. Read each issue with the Linear MCP/app after queue selection and understand the intent.
 3. Optionally inspect the codebase or product surface to confirm applicability and avoid misreading the request.
 4. Prepare a structured triage proposal for the user in this exact Markdown shape:
 

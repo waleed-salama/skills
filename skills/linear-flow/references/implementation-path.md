@@ -1,23 +1,26 @@
 # Implementation Path
 
-Use this path to start and complete the next `Ready`-labeled implementation issue from Linear.
+Use this path to start and complete a `Ready`-labeled implementation issue from Linear.
 
 Use `planning/linear.md` as the default source for team and project identifiers when that file exists. Do not spend Linear calls rediscovering the authenticated user, team list, project list, or status list if `planning/linear.md` already provides the needed identifiers for this implementation session.
 
 ## Workflow
 
-1. Select the implementation issue:
-   - if the user explicitly names an issue, or if the current chat just completed planning for an issue and the user asks to proceed with implementation, use that specific issue after verifying it is in `Todo` and has the `Ready` label
-   - otherwise take the first `Ready`-labeled issue from `Todo` using the canonical queue-selection rule
-   - read `planning/linear.md` first and use its cached project id and `Ready` label id when available
-   - use standard Linear MCP for normal issue reads and updates
-   - if the `Ready` label id is missing or stale, fetch the team labels once, confirm the `Planning` group plus `Claimed` and `Ready` child labels, and update `planning/linear.md`
-   - use Composio raw GraphQL to query `Todo` issues with the `Ready` label, `first: 1`, `identifier`, `title`, and `sortOrder`
-   - filter the queue query with `labels: { id: { eq: $readyLabelId } }`
-   - include `sort: [{ manual: { order: Ascending } }]` in the GraphQL query
-   - treat the returned order as the real manual queue order among implementation-ready issues
-   - if this ordered query cannot be completed authoritatively, stop immediately and tell the user in `final`; do not continue implementation selection with any fallback ordering
-2. Do not move the issue to `In Progress` yet. First read it and prepare the approval gate.
+1. Select the implementation issue using this precedence order:
+   - If the user explicitly names an issue, use that specific issue after verifying it is in `Todo` and has the `Ready` label.
+   - If the current chat has just planned or finalized a single issue and the user asks to implement, continue with that same issue after verifying it is in `Todo` and has the `Ready` label.
+   - Treat the issue from the most recent Planning Path or Direct Planning Issue Path in this chat as the selected issue, even if other `Ready` issues exist above it in the manual queue.
+   - In those specific-issue cases, do not run the ordered GraphQL queue-selection query and do not ask which `Ready` issue is top of the queue. The user's same-chat implementation request is scoped to the issue already being discussed.
+   - Only when there is no explicit issue and no clear current-chat planned issue, take the first `Ready`-labeled issue from `Todo` using the canonical queue-selection rule.
+   - For queue-selection only, read `planning/linear.md` first and use its cached project id and `Ready` label id when available.
+   - Use actual Linear MCP/app tools such as `get_issue`, `update_issue`, and `list_issue_labels` for normal issue reads and updates; do not invent tool names.
+   - For queue-selection only, if the `Ready` label id is missing or stale, fetch the team labels once, confirm the `Planning` group plus `Claimed` and `Ready` child labels, and update `planning/linear.md`.
+   - For queue-selection only, use the direct Linear GraphQL API to query `Todo` issues with the `Ready` label, `first: 1`, `identifier`, `title`, and `sortOrder`.
+   - For queue-selection only, filter the queue query with `labels: { id: { eq: $readyLabelId } }`.
+   - For queue-selection only, include `sort: [{ manual: { order: Ascending } }]` in the GraphQL query.
+   - For queue-selection only, treat the returned order as the real manual queue order among implementation-ready issues.
+   - If a required queue-selection query cannot be completed authoritatively, stop immediately and tell the user in `final`; do not continue implementation selection with any fallback ordering.
+2. Do not move the issue to `In Progress` yet. First read it with the Linear MCP/app and prepare the approval gate.
 3. If the issue has gone stale, refresh it before implementation.
    - Treat an issue as stale when it has not been updated for 14 or more days, or when the relevant codebase area has materially changed since the `Ready` label was applied.
    - Revalidate the plan before coding. If the issue is no longer implementation-ready, stop and ask the user whether it should go back for further planning.

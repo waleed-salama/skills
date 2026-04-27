@@ -144,9 +144,9 @@ Queue model:
 - Triage Path selects the first 7 `Draft` issues in manual Linear order.
 - Planning Path selects the first `Todo` issue without any `Planning` group label.
 - Planning Path must add `Claimed` immediately after the ordered GraphQL query returns the issue id. Do not read the issue, inspect the repo, analyze, send a progress update, or make any other tool call between selection and claim.
-- Implementation Path selects the first `Todo` issue with the `Ready` label.
+- Implementation Path selects the issue just planned in the same chat when the user asks to implement after planning. Only when there is no explicit or current-chat issue does it select the first `Todo` issue with the `Ready` label.
 - Manual queue order in Linear is authoritative.
-- Use Composio raw GraphQL for ordered queue selection. If the ordered query cannot be completed authoritatively, stop. Do not fall back to native Linear issue listing order.
+- Use the direct Linear GraphQL API only for ordered queue selection, with the API key loaded from `LINEAR_API_KEY` or a local OS secret store inside the API-call process. After queue selection, use actual Linear MCP/app tools for issue reads and writes. If the ordered query cannot be completed authoritatively, stop. Do not fall back to native Linear issue listing order.
 
 Repository identifier cache:
 
@@ -186,7 +186,7 @@ Planning behavior:
 
 Implementation behavior:
 
-- Implementation starts from a `Ready`-labeled `Todo` issue.
+- Implementation starts from a `Ready`-labeled `Todo` issue. If the chat just finished planning an issue and the user asks to implement, use that issue instead of querying for the top `Ready` issue.
 - The issue is not moved to `In Progress` until the user approves the implementation approval-gate message.
 - After approval, move the issue to `In Progress` and remove `Ready`.
 - If repository code changes are required, the chat must already be inside a dedicated worktree. The agent must not create a worktree. If not inside one, stop and ask the user to hand off the chat into a Codex UI worktree.

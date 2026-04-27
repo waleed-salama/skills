@@ -21,13 +21,13 @@ Use this path to validate the top `Suggested` issue labeled `Assertion` without 
 
 1. Take the first issue from the `Suggested` queue that is labeled `Assertion`.
    - read `planning/linear.md` first and use its cached project id when available
-   - use standard Linear MCP for normal issue reads and updates
-   - use Composio raw GraphQL to query `Suggested` issues with `first: 1`, `identifier`, `title`, and `sortOrder`
+   - use actual Linear MCP/app tools such as `get_issue` and `update_issue` for normal issue reads and updates; do not invent tool names
+   - use the direct Linear GraphQL API to query `Suggested` issues with `first: 1`, `identifier`, `title`, and `sortOrder`
    - filter that query to only issues carrying the `Assertion` label
    - include `sort: [{ manual: { order: Ascending } }]` in the GraphQL query
    - treat the returned order as the real manual queue order
    - if this ordered query cannot be completed authoritatively, stop immediately and tell the user in `final`; do not continue with any fallback ordering
-2. Read the issue description in full and restate the assertion clearly.
+2. Read the issue description in full with the Linear MCP/app and restate the assertion clearly.
 3. Determine the validation mode:
    - `Automated Coverage Mode`: use when the relevant part of the project already has meaningful automated tests or clear testing conventions that can absorb this assertion as a test scenario
    - `Manual Validation Mode`: use when meaningful automated testing does not exist yet for that area

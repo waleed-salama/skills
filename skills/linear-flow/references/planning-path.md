@@ -19,9 +19,9 @@ Use this path to turn the top unclaimed `Todo` issue into an implementation-read
 
 1. Take the first unclaimed issue from the `Todo` queue using the canonical queue-selection rule:
    - read `planning/linear.md` first and use its cached project id, `Planning` label group id, and `Claimed` / `Ready` label ids when available
-   - use standard Linear MCP for normal issue reads and updates
+   - use actual Linear MCP/app tools such as `get_issue`, `update_issue`, and `list_issue_labels` for normal issue reads and updates; do not invent tool names
    - if the `Planning` label identifiers are missing or stale, fetch the team labels once, confirm the `Planning` group plus `Claimed` and `Ready` child labels, and update `planning/linear.md`
-   - use Composio raw GraphQL to query `Todo` issues with `first: 1`, `identifier`, `title`, and `sortOrder`
+   - use the direct Linear GraphQL API to query `Todo` issues with `first: 1`, `identifier`, `title`, and `sortOrder`
    - filter out issues that already have any label under the `Planning` label group with `labels: { every: { parent: { id: { neq: $planningGroupId } } } }`
    - include `sort: [{ manual: { order: Ascending } }]` in the GraphQL query
    - treat the returned order as the real manual queue order
@@ -33,7 +33,7 @@ Use this path to turn the top unclaimed `Todo` issue into an implementation-read
    - keep the issue in `Todo`
    - do not move it to `Planning`
    - do not remove any normal kind labels such as `Feature`, `Improvement`, `Bug`, or `Admin`
-3. Read the issue description in full and distill it into a concise refresher for the user. Do not repeat the entire issue verbatim unless the user explicitly asks for that.
+3. Read the issue description in full with the Linear MCP/app and distill it into a concise refresher for the user. Do not repeat the entire issue verbatim unless the user explicitly asks for that.
 4. If the issue has gone stale, refresh it before planning further.
    - Treat an issue as stale when it has not been updated for 14 or more days, or when the relevant codebase area has materially changed since the last planning pass.
    - Revalidate the problem framing, assumptions, and implementation direction before continuing.
@@ -121,7 +121,7 @@ For `Admin` issues, the planning output should still be implementation-ready, bu
 
 Use one visible `final` message to ask the user to switch to Planning mode. That message should include:
 
-- the concise issue refresher, starting with a top-level `# {Issue Title}` heading
+- the concise issue refresher, starting with a top-level `# {Issue ID}: {Issue Title}` heading so the first line can be copied into the chat title
 - the planning depth and a one-line reason
 - the current proposed approach
 - the current assumptions
@@ -145,7 +145,7 @@ This must be the last message before stopping. Do not generate a plan artifact w
 
 Before replacing the `Claimed` label with `Ready`, send one visible `final` message that includes:
 
-- the concise issue refresher, starting with a top-level `# {Issue Title}` heading
+- the concise issue refresher, starting with a top-level `# {Issue ID}: {Issue Title}` heading so the first line can be copied into the chat title
 - the planning depth and reason
 - the finalized implementation-ready plan
 - the remaining assumptions
@@ -163,7 +163,7 @@ In revisions after the first approval-gate draft, show only changed sections by 
 Use this compact shape for user-facing planning discussion in chat:
 
 ```markdown
-# {Issue Title}
+# {Issue ID}: {Issue Title}
 
 Planning depth: {Fast | Standard | Deep}
 Reason: {One short reason}
@@ -198,7 +198,7 @@ Yes or No.
 Use this compact shape for `Fast` issues that do not need Planning mode:
 
 ```markdown
-# {Issue Title}
+# {Issue ID}: {Issue Title}
 
 Planning depth: Fast
 Reason: {One short reason}
