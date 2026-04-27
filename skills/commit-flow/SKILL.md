@@ -9,6 +9,8 @@ description: "Analyze a repository diff, audit the documentation affected by tha
 
 Use this skill when the user wants Codex to perform a Git delivery step and expects commit preparation to include documentation hygiene. Always review the full diff first, audit the documentation that should describe the changed behavior or structure, update stale documentation before committing, and make the commit message describe the entire staged change set.
 
+When the requested delivery is a production release from `dev` to `main` or `master`, use the Production Release Path instead of the normal feature-branch PR path. In that path, update `changelog.md` on `dev`, commit that changelog update directly to `dev`, push `dev`, and open the production PR from `dev` to `main` or `master`.
+
 ## Delivery Modes
 
 Choose exactly one mode before executing Git commands:
@@ -49,6 +51,7 @@ For every commit flow:
    - Run `git status -sb`.
    - Review the full change set, not just the latest chat step.
    - If needed, inspect staged and unstaged diffs separately.
+   - Determine whether this is a normal delivery or a production release from `dev` to `main` or `master`.
 
 2. Audit documentation.
    - Enumerate the changed areas from the diff.
@@ -84,6 +87,76 @@ For every commit flow:
 
 6. Execute the selected mode.
 
+## Production Release Path
+
+Use this path when the user asks to release, promote, or create a production PR from `dev` to `main` or `master`, or when the intended PR head is `dev` and the base is `main` or `master`.
+
+This path is an explicit exception to the normal branch rule:
+
+- Do not create a new `codex/*` branch.
+- Do not move the changelog update onto a feature branch.
+- Work on `dev`, commit the changelog update to `dev`, push `dev`, then open the PR from `dev` to the production branch.
+
+Before editing:
+
+1. Confirm the current branch is `dev`, or switch to `dev` only if the user clearly requested the production release and the worktree state allows it without disturbing unrelated changes.
+2. Identify the production base branch, preferring the user's requested base, then `main`, then `master`.
+3. Fetch the relevant remote refs.
+4. Review the aggregate release scope from production to `dev`:
+   - inspect commit subjects and bodies in `origin/<base>..HEAD`;
+   - inspect the combined diff with `origin/<base>...HEAD`;
+   - include already-merged feature and fix commits, not just the latest local change.
+
+Update `changelog.md` before committing:
+
+- Prefer an existing root-level `changelog.md`; if the repo uses `CHANGELOG.md`, update that file instead. If no changelog exists, create a root-level `changelog.md`.
+- Add a dated release entry for the production PR.
+- Write for users, not developers.
+- Summarize the visible value delivered since the current production branch: new capabilities, workflow improvements, bug fixes, reliability improvements, and UX changes.
+- Avoid implementation details, internal file names, branch names, dependency names, schema details, and low-level optimization notes unless users directly experience them.
+- Group changes under plain-language headings such as `Added`, `Improved`, and `Fixed` when that makes the release easier to scan.
+- If a commit is purely internal and has no user-visible impact, omit it or fold it into a user-facing reliability or maintenance note only when appropriate.
+
+Then execute the selected production release mode:
+
+- Stage the changelog update and any explicitly intended release-prep files.
+- Commit directly on `dev` with a message that clearly describes the changelog update for the production release.
+- Push `dev` with tracking: `git push -u origin dev`.
+- For `commit-push-pr`, open a ready-for-review PR from `dev` to the production base branch.
+- Generate the PR title and body from the full `dev` to production delta.
+
+For a production release PR, do not use the normal single-issue PR body template. A release PR is an aggregate promotion, so it should not force `User-visible issue` or `Root cause` sections unless the release genuinely centers on one incident.
+
+Use this release PR title shape:
+
+```text
+Release dev to <base>
+```
+
+Use this release PR body shape:
+
+```text
+## Summary
+- Promote the accumulated changes from `dev` to `<base>`.
+- Include the dated changelog update for this release.
+
+## Release highlights
+- Summarize the major features, improvements, and fixes included in the full `dev` to `<base>` delta.
+- Group related changes when helpful.
+
+## Operational notes
+- Note migrations, environment changes, rollout considerations, known risks, or follow-up work.
+- Write `None` if there are no operational notes.
+
+## Documentation
+- Mention the changelog update and any other docs changed for the release.
+
+## Validation
+- List the checks run for the release.
+```
+
+The release PR body is for reviewers and maintainers, not end users. It can mention branches, validation, docs, operational risks, and technical coordination details where useful. Keep the changelog entry as the user-facing release summary.
+
 ### `only-commit`
 
 - Stay on the current branch.
@@ -93,6 +166,7 @@ For every commit flow:
 
 ### `commit-and-push`
 
+- For a production release from `dev` to `main` or `master`, use the Production Release Path instead.
 - If currently on `main`, `master`, or the repo default branch, create `codex/{description}` first.
 - Otherwise stay on the current branch.
 - Stage the intended files with `git add -A` unless the user requested narrower staging.
@@ -103,6 +177,7 @@ For every commit flow:
 
 - Require GitHub CLI `gh`. Check `gh --version`.
 - Require authenticated `gh`. Check `gh auth status`.
+- For a production release from `dev` to `main` or `master`, use the Production Release Path instead.
 - If currently on `main`, `master`, or the repo default branch, create `codex/{description}` first.
 - Otherwise stay on the current branch.
 - Stage the intended files with `git add -A` unless the user requested narrower staging.
@@ -127,6 +202,8 @@ For every commit flow:
 - Do not build the commit body by embedding literal `\n` escape sequences in a shell string; use real newlines via stdin, a heredoc, a temp file, or a correctly formed multiline `-m` value.
 - Do not amend or rewrite history unless the user explicitly asks.
 - Do not revert unrelated user changes.
+- Do not create a feature branch for a production release whose PR should run from `dev` to `main` or `master`.
+- Do not write production changelog entries as technical commit logs; write them as user-facing release notes.
 - Do not open a PR in `only-commit` or `commit-and-push` mode.
 - Do not require a PR when the user only asked for a commit or a push.
 
@@ -135,6 +212,7 @@ For every commit flow:
 - `Use $commit-flow to only commit these changes.`
 - `Use $commit-flow to commit and push the current work.`
 - `Use $commit-flow to commit, push, and open a PR.`
+- `Use $commit-flow to prepare the production PR from dev to main.`
 - `Use $commit-flow before committing and make sure the docs are actually up to date.`
 
 ## Commit Message Shape

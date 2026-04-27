@@ -1,4 +1,4 @@
 interface:
   display_name: "Commit Flow"
   short_description: "Documentation-aware git delivery workflow"
-  default_prompt: "Use $commit-flow to analyze the diff, update documentation, then only commit, commit and push, or commit, push, and open a draft PR."
+  default_prompt: "Use $commit-flow to analyze the diff, update documentation, then only commit, commit and push, or commit, push, and open a ready-for-review PR. For production releases, update the changelog on dev before opening the dev-to-production PR."
